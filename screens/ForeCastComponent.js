@@ -48,7 +48,7 @@ const ForeCastComponent = ({ weatherDetails }) => {
       showsVerticalScrollIndicator={false}
       contentContainerStyle={styles.scrollContainer}
     >
-      <View style={{ flex: 1 }}>
+      <View style={styles.outerWrapper}>
         <View style={styles.weatherWrapper}>
           <View style={styles.iconWrapper}>
             <Image
@@ -70,12 +70,7 @@ const ForeCastComponent = ({ weatherDetails }) => {
         <View style={styles.weatherParamsWrapper}>
           <FlatList
             data={bottomParams}
-            contentContainerStyle={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "center",
-              flex: 1,
-            }}
+            contentContainerStyle={styles.bottomParamList}
             renderItem={({ item }) => (
               <BottomParams weatherDetails={weatherDetails} item={item} />
             )}
@@ -102,6 +97,7 @@ const BottomParams = ({ weatherDetails, item }) => {
 };
 
 const styles = StyleSheet.create({
+  outerWrapper: { flex: 1 },
   cloudIcon: {
     height: "100%",
     width: "100%",
@@ -159,5 +155,11 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     marginTop: 12.66,
     fontFamily: "DMSansMedium",
+  },
+  bottomParamList: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    flex: 1,
   },
 });

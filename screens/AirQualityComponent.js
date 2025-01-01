@@ -4,9 +4,8 @@ import GasInfo from "../components/GasInfo";
 
 const AirQualityComponent = ({ weatherDetails }) => {
   const [airQualityConditionText, setAirQualityConditionText] = useState("");
-
+  const aqi = weatherDetails?.current?.air_quality?.["us-epa-index"];
   const handleAirQualityText = () => {
-    const aqi = weatherDetails?.current?.air_quality?.["us-epa-index"];
     switch (aqi) {
       case 1:
         return "Good";
@@ -22,15 +21,16 @@ const AirQualityComponent = ({ weatherDetails }) => {
   };
   useEffect(() => {
     setAirQualityConditionText(handleAirQualityText());
-  }, []);
+  }, [weatherDetails]);
 
   const gases = ["co", "no2", "o3", "so2"];
-  const gasArr = gases.map((gas) => {
-    return { name: gas, qty: weatherDetails?.current?.air_quality[gas] };
-  });
+  const gasArr = gases.map((gas) => ({
+    name: gas,
+    qty: weatherDetails?.current?.air_quality[gas],
+  }));
 
   return (
-    <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+    <ScrollView contentContainerStyle={styles.scrollViewWrapper}>
       <View style={styles.container}>
         <View style={styles.wrapper}>
           <View style={styles.aqiWrapper}>
@@ -38,20 +38,15 @@ const AirQualityComponent = ({ weatherDetails }) => {
               {airQualityConditionText}
             </Text>
             <View style={styles.aqiTextWrapper}>
-              <View style={{ marginRight: 4 }}>
+              <View style={styles.quiTextInner}>
                 <Text style={styles.aqiText}>Air Quality Index</Text>
               </View>
-              <Text style={styles.aqiText}>
-                {weatherDetails?.current?.air_quality?.["us-epa-index"]}{" "}
-              </Text>
+              <Text style={styles.aqiText}>{aqi}</Text>
             </View>
           </View>
           <View style={styles.aqiParameters}>
             <FlatList
-              contentContainerStyle={{
-                flex: 1,
-                justifyContent: "space-around",
-              }}
+              contentContainerStyle={styles.gasList}
               data={gasArr}
               renderItem={({ item, key }) => <GasInfo gases={item} key={key} />}
               horizontal
@@ -67,6 +62,7 @@ const AirQualityComponent = ({ weatherDetails }) => {
 export default AirQualityComponent;
 
 const styles = StyleSheet.create({
+  scrollViewWrapper: { flexGrow: 1 },
   container: {
     flex: 1,
     justifyContent: "center",
@@ -82,6 +78,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexDirection: "row",
   },
+  quiTextInner: { marginRight: 4 },
   aqiText: {
     fontSize: 20,
     color: "rgba(185,185,185,1.00)",
@@ -102,6 +99,10 @@ const styles = StyleSheet.create({
   },
   airIndex: {
     fontSize: 15,
+  },
+  gasList: {
+    flex: 1,
+    justifyContent: "space-around",
   },
   airGases: {
     gap: 4,

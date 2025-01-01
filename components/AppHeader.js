@@ -11,10 +11,11 @@ const AppHeader = ({ weatherDetails }) => {
 
   function handleFormateDate() {
     const today = new Date();
-    const day = today.getDate();
-    const month = today.toString().split(" ")[1];
-    const year = today.getFullYear();
-    const formattedDate = day + " " + month + ", " + year;
+    const formattedDate = new Intl.DateTimeFormat("en-US", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    }).format(today);
     setDate(formattedDate);
   }
 
@@ -78,7 +79,7 @@ const AppHeader = ({ weatherDetails }) => {
           size={25}
           color="white"
           onPress={getUserLocation}
-          style={{ lineHeight: 42.61 }}
+          style={styles.locationIcon}
         />
         <View style={styles.header}>
           <Text style={styles.cityName}>{weatherDetails?.location?.name}</Text>
@@ -141,6 +142,7 @@ const styles = StyleSheet.create({
     fontWeight: 500,
     textAlign: "center",
   },
+  locationIcon: { lineHeight: 42.61 },
   dateText: {
     fontSize: 14.99,
     lineHeight: 27.31,
