@@ -19,7 +19,7 @@ const SearchModal = () => {
       animationType="slide"
       onRequestClose={() => setShowModal(false)}
     >
-      <KeyboardAvoidingView style={{ flex: 1 }}>
+      <KeyboardAvoidingView style={styles.keyboard}>
         <ImageBackground
           resizeMode="cover"
           style={styles.modalWrapper}
@@ -66,6 +66,7 @@ const styles = StyleSheet.create({
     paddingRight: 25,
     paddingLeft: 25,
   },
+  keyboard: { flex: 1 },
   linearGradient: {
     position: "absolute",
     width: "130%",
