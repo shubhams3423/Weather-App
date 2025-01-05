@@ -8,15 +8,17 @@ import {
   Alert,
 } from "react-native";
 import React, { useEffect, useRef, useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as NavigationBar from "expo-navigation-bar";
 import WeatherTabs from "../components/WeatherTabs";
 import AppHeader from "../components/AppHeader";
 import backgroundImg from "../assets/images/backgroundImg.jpeg";
 import { LinearGradient } from "expo-linear-gradient";
 import { useStore } from "../StoreProvider";
+import UserOffline from "../components/UserOffline";
+import APIModal from "../components/APIModal";
 
 const WeatherApp = () => {
-  const baseUrl = process.env.EXPO_PUBLIC_BASE_URL;
   const {
     getUserLocation,
     location,
@@ -28,23 +30,70 @@ const WeatherApp = () => {
     setIsLoading,
     isAnimating,
     setIsAnimating,
-    getRandomCityName,
+    isUserOffline,
+    setIsUserOffline,
+    handleInternetConnection,
   } = useStore();
-
-  const timestamp = Date.now();
+  const defaultAPIKey = process.env.EXPO_PUBLIC_API_KEY;
+  const [userAPIKey, setUserAPIKey] = useState("");
+  const [userDefaultAPIKey, setUserDefaultAPIKey] = useState("");
+  const [fetchURL, setFetchURL] = useState("");
   const { longitude, latitude } = location?.coords ?? {
     longitude: "",
     latitude: "",
   };
-  const coordsURL = `${baseUrl}&q=${latitude},${longitude}&days=1&aqi=yes&alerts=no&timestamp=${timestamp}`;
-  const searchURL = `${baseUrl}&q=${searchText}&days=1&aqi=yes&alerts=no`;
-  const [fetchURL, setFetchURL] = useState(coordsURL);
+  const getUserAPIKey = async () => {
+    try {
+      const userKey = await AsyncStorage.getItem("user-key");
+      if (userKey !== null) {
+        setUserDefaultAPIKey(userKey);
+      }
+    } catch (error) {
+      Alert.alert(error);
+    }
+  };
+  const handleBaseURL = () => {
+    if (userDefaultAPIKey !== "") {
+      return `https://api.weatherapi.com/v1/forecast.json?key=${userDefaultAPIKey}`;
+    }
+    return `https://api.weatherapi.com/v1/forecast.json?key=${defaultAPIKey}`;
+  };
+
+  const handleAPIURLs = (url) => {
+    const baseURL = handleBaseURL();
+    switch (url) {
+      case "coordsURL":
+        setFetchURL(
+          `${baseURL}&q=${latitude},${longitude}&days=1&aqi=yes&alerts=no&timestamp=${timestamp}`
+        );
+        break;
+      case "searchURL":
+        setFetchURL(`${baseURL}&q=${searchText}&days=1&aqi=yes&alerts=no`);
+        break;
+      case "updatedURL":
+        setFetchURL(
+          `${baseURL}&q=${cityNameRef.current}&days=1&aqi=yes&alerts=no&timestamp=${timestamp}`
+        );
+    }
+  };
+
+  const [APIError, setAPIError] = useState("");
+  const [showAPIModal, setShowAPIModal] = useState(false);
   const timeToRecallAPI = 5 * 60 * 1000;
   const [intervalId, setIntervalId] = useState(0);
-  const cityNameRef = useRef(""); // saved the city name to call api after 10 min.
+  const cityNameRef = useRef(""); // saved the city name to call api after 5 mins.
+  const timestamp = Date.now();
+
+  const storeUserAPIKey = async () => {
+    try {
+      await AsyncStorage.setItem("user-key", userAPIKey);
+    } catch (error) {
+      Alert.alert(error);
+    }
+  };
+
   const intervalCallback = () => {
-    const updateWeatherDataURL = `${baseUrl}&q=${cityNameRef.current}&days=1&aqi=yes&alerts=no&timestamp=${timestamp}`;
-    setFetchURL(updateWeatherDataURL);
+    handleAPIURLs("updatedURL");
     setIsAnimating(true);
   };
 
@@ -60,39 +109,62 @@ const WeatherApp = () => {
     if (!isAnimating) {
       setIsLoading(true);
     }
-    handleAPITimer();
-    try {
-      const res = await fetch(fetchURL);
-      const data = await res.json();
-      if (res.ok) {
-        setWeatherDetails(data);
-        setSearchText("");
-      } else {
-        Alert.alert(data?.error?.message);
-        if (cityNameRef.current == "") {
-          setSearchText(getRandomCityName()); // only when there is not any previous location.
+    const networkStatus = await handleInternetConnection();
+    setIsUserOffline(!networkStatus);
+    if (networkStatus) {
+      handleAPITimer();
+      try {
+        const res = await fetch(fetchURL);
+        const data = await res.json();
+        // res.status = 429;
+        if (res.status === 200) {
+          setWeatherDetails(data);
+          if (userAPIKey !== "") {
+            storeUserAPIKey();
+          }
+          setSearchText("");
+        } else {
+          setUserAPIKey("");
+          setUserDefaultAPIKey("");
+          switch (res.status) {
+            case 401:
+              setAPIError("API key is invalid or expired");
+              setShowAPIModal(true);
+              break;
+            case 429:
+              setAPIError("Rate limit exceeded. Try again later");
+              setShowAPIModal(true);
+              break;
+            case 403:
+              setAPIError("Access forbidden. Check your API key permissions");
+              setShowAPIModal(true);
+              break;
+            default:
+              throw new Error(`Unexpected error: ${response.status}`);
+          }
         }
+      } catch (error) {
+        Alert.alert(error);
       }
-    } catch (error) {
-      Alert.alert(error);
+      setIsLoading(false);
+      setTimeout(() => {
+        setIsAnimating(false);
+      }, 1000);
     }
-    setIsLoading(false);
-    setTimeout(() => {
-      setIsAnimating(false);
-    }, 1000);
   };
 
   useEffect(() => {
     if (Object?.keys(location).length > 0) {
-      setFetchURL(coordsURL);
+      handleAPIURLs("coordsURL");
     } else {
       getUserLocation();
+      getUserAPIKey(); // "Check if the user already has a stored API key or not.
     }
   }, [location]);
 
   useEffect(() => {
     if (searchText.trim() !== "") {
-      setFetchURL(searchURL);
+      handleAPIURLs("searchURL");
     }
   }, [searchText]);
 
@@ -112,9 +184,19 @@ const WeatherApp = () => {
     NavigationBar.setBackgroundColorAsync("#000000");
   }, []);
 
+  useEffect(() => {
+    if (userAPIKey.length > 0) {
+      setUserDefaultAPIKey(userAPIKey);
+    }
+  }, [userAPIKey]);
+
+  useEffect(() => {
+    handleAPIURLs("coordsURL");
+  }, [userDefaultAPIKey]);
+
   return (
     <SafeAreaView style={styles.safeView}>
-      <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
+      <ScrollView contentContainerStyle={styles.scrollWrapper}>
         <ImageBackground
           resizeMode="cover"
           style={[styles.backgroundWrapper, isLoading && styles.loaderOpacity]}
@@ -132,10 +214,22 @@ const WeatherApp = () => {
             ]}
             locations={[0.22, 0.3, 0.5, 0.9]}
           />
-          {isLoading ? (
+          {showAPIModal ? (
+            <APIModal
+              setShowAPIModal={setShowAPIModal}
+              APIError={APIError}
+              getWeatherDetails={getWeatherDetails}
+              setUserAPIKey={setUserAPIKey}
+            />
+          ) : isUserOffline ? (
+            <UserOffline
+              getWeatherDetails={getWeatherDetails}
+              handleAPIURLs={handleAPIURLs}
+            />
+          ) : isLoading ? (
             <ActivityIndicator style={styles.loader} size={50} color="white" />
           ) : (
-            <View style={{ flex: 1 }}>
+            <View style={styles.wrapper}>
               <AppHeader weatherDetails={weatherDetails} />
               <WeatherTabs weatherDetails={weatherDetails} />
             </View>
@@ -157,6 +251,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#080A2F",
   },
+  scrollWrapper: { flexGrow: 1 },
   loaderOpacity: {
     opacity: 0.8,
   },
@@ -174,5 +269,8 @@ const styles = StyleSheet.create({
     height: "70%",
     top: -10,
     right: -10,
+  },
+  wrapper: {
+    flex: 1,
   },
 });
