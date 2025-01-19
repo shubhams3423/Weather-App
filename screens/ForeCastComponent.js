@@ -8,12 +8,12 @@ import {
   FlatList,
 } from "react-native";
 import React from "react";
-import windIcon from "../assets/Icons/WindIcon.png";
-import springIcon from "../assets/Icons/SpringIcon.png";
-import cloudIcon from "../assets/Icons/CloudIcon.png";
+import windIcon from "../assets/Icons/wind_icon.png";
+import spring_icon from "../assets/Icons/spring_icon.png";
+import cloud_icon from "../assets/Icons/cloud_icon.png";
 import { getWeatherIcon } from "../weatherIcons";
 
-const { width } = Dimensions.get("window");
+const { width } = Dimensions.get("screen");
 const ForeCastComponent = ({ weatherDetails }) => {
   const handleWeatherIcon = () => {
     const isDay = weatherDetails.current?.is_day ? "day" : "night";
@@ -34,12 +34,12 @@ const ForeCastComponent = ({ weatherDetails }) => {
     },
     {
       key: "humidity",
-      icon: cloudIcon,
+      icon: cloud_icon,
       unit: "%",
     },
     {
       key: "uv",
-      icon: springIcon,
+      icon: spring_icon,
       unit: "of 10",
     },
   ];

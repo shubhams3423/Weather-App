@@ -12,12 +12,12 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as NavigationBar from "expo-navigation-bar";
 import WeatherTabs from "../components/WeatherTabs";
 import AppHeader from "../components/AppHeader";
-import backgroundImg from "../assets/images/backgroundImg.jpeg";
+import backgroundImg from "../assets/images/background_img.png";
 import { LinearGradient } from "expo-linear-gradient";
 import { useStore } from "../StoreProvider";
 import UserOffline from "../components/UserOffline";
 import APIModal from "../components/APIModal";
-
+import LocationNotFound from "../components/LocationNotFound";
 const WeatherApp = () => {
   const {
     getUserLocation,
@@ -38,6 +38,7 @@ const WeatherApp = () => {
   const [userAPIKey, setUserAPIKey] = useState("");
   const [userDefaultAPIKey, setUserDefaultAPIKey] = useState("");
   const [fetchURL, setFetchURL] = useState("");
+  const [isLocationFound, setIsLocationFound] = useState(true);
   const { longitude, latitude } = location?.coords ?? {
     longitude: "",
     latitude: "",
@@ -116,7 +117,6 @@ const WeatherApp = () => {
       try {
         const res = await fetch(fetchURL);
         const data = await res.json();
-        // res.status = 429;
         if (res.status === 200) {
           setWeatherDetails(data);
           if (userAPIKey !== "") {
@@ -127,6 +127,13 @@ const WeatherApp = () => {
           setUserAPIKey("");
           setUserDefaultAPIKey("");
           switch (res.status) {
+            case 400:
+              // Alert.alert(
+              //   "Location Not Found",
+              //   "Please enter a valid location."
+              // );
+              setIsLocationFound(false);
+              break;
             case 401:
               setAPIError("API key is invalid or expired");
               setShowAPIModal(true);
@@ -228,6 +235,8 @@ const WeatherApp = () => {
             />
           ) : isLoading ? (
             <ActivityIndicator style={styles.loader} size={50} color="white" />
+          ) : !isLocationFound ? (
+            <LocationNotFound setIsLocationFound={setIsLocationFound} />
           ) : (
             <View style={styles.wrapper}>
               <AppHeader weatherDetails={weatherDetails} />

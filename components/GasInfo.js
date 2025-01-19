@@ -27,7 +27,6 @@ const styles = StyleSheet.create({
   },
   text: {
     color: "white",
-    fontFamily: "NunitoExtraBold",
   },
   airGasText: {
     fontSize: 20,

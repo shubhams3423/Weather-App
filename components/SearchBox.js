@@ -4,14 +4,20 @@ import { FontAwesome } from "@expo/vector-icons";
 import { MaterialIcons } from "@expo/vector-icons";
 import { useStore } from "../StoreProvider";
 
-const SearchBox = () => {
-  const { getUserLocation, setSearchText, setShowModal } = useStore();
+const SearchBox = ({
+  setShowModal,
+  searchModal,
+  setIsLocationFound,
+  locationFound,
+}) => {
+  const { getUserLocation, setSearchText } = useStore();
 
   const [inputText, setInputText] = useState("");
   const handleTextInput = () => {
     if (inputText.trim().length > 0) {
       setSearchText(inputText.trim());
-      setShowModal(false);
+      searchModal && setShowModal(false);
+      locationFound && setIsLocationFound(true);
     }
   };
   const handleKeyPress = (e) => {
@@ -41,7 +47,8 @@ const SearchBox = () => {
           size={25}
           onPress={() => {
             getUserLocation();
-            setShowModal(false);
+            searchModal && setShowModal(false);
+            locationFound && setIsLocationFound(true);
           }}
         />
       </View>

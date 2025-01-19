@@ -71,7 +71,6 @@ const styles = StyleSheet.create({
     fontWeight: 800,
     lineHeight: 80,
     fontSize: 50,
-    fontWeight: "bold",
     color: "#FFFFFF",
   },
   aqiTextWrapper: {

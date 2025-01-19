@@ -1,10 +1,10 @@
-import React from "react";
+import React  from "react";
 import { createMaterialTopTabNavigator } from "@react-navigation/material-top-tabs";
 import ForeCastComponent from "../screens/ForeCastComponent";
 import AirQualityComponent from "../screens/AirQualityComponent";
-import { View, Text } from "react-native";
+import { View, Text, Dimensions } from "react-native";
 const Tab = createMaterialTopTabNavigator();
-
+const screenWidth = Dimensions.get("screen").width;
 const WeatherTabs = ({ weatherDetails }) => {
   return (
     <Tab.Navigator
@@ -20,20 +20,19 @@ const WeatherTabs = ({ weatherDetails }) => {
         tabBarStyle: {
           borderRadius: 14.99,
           backgroundColor: "rgba(64, 132, 223, 0.2)",
-          width: 300,
-          margin: "auto",
+          marginHorizontal: 20,
           borderBottomWidth: 0,
           elevation: 0, // for android removes the shadow.
           shadowColor: "transparent", // for ios removes the shadow.
+          overflow: "hidden",
         },
         tabBarLabel: ({ focused }) => (
           <View
             style={{
               backgroundColor: focused ? "#4084DF" : "transparent",
-              width: 150,
+              width: (screenWidth - 90) / 2,
               height: 59.97,
               justifyContent: "center",
-              paddingHorizontal: 20,
               borderRadius: 14.99,
               alignItems: "center",
               overflow: "hidden",
@@ -41,9 +40,8 @@ const WeatherTabs = ({ weatherDetails }) => {
           >
             <Text
               style={{
-                fontSize: 20,
+                fontSize: 19,
                 lineHeight: 27.31,
-                fontFamily: "NunitoExtraBold",
                 color: focused ? "#FFFFFF" : "#ffffffa1",
                 fontWeight: focused ? "500" : "400",
               }}

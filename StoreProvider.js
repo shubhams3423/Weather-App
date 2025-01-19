@@ -36,7 +36,7 @@ const StoreProvider = ({ children }) => {
         const response = await fetch("https://www.google.com", {
           method: "HEAD",
           cache: "no-cache",
-        }); // Able to make any api call or not using available network.
+        }); // Able to make any api call with available network or not
         if (response.ok) {
           return true;
         } else {

@@ -6,7 +6,7 @@ import {
   KeyboardAvoidingView,
   ImageBackground,
 } from "react-native";
-import backgroundImg from "../assets/images/backgroundImg.jpeg";
+import backgroundImg from "../assets/images/background_img.png";
 import { LinearGradient } from "expo-linear-gradient";
 import { MaterialIcons } from "@expo/vector-icons";
 import SearchBox from "./SearchBox";
@@ -44,7 +44,7 @@ const SearchModal = () => {
               onPress={() => setShowModal(false)}
             />
           </View>
-          <SearchBox />
+          <SearchBox setShowModal={setShowModal} searchModal />
         </ImageBackground>
       </KeyboardAvoidingView>
     </Modal>
