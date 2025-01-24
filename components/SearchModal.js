@@ -1,18 +1,30 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Modal,
   StyleSheet,
   KeyboardAvoidingView,
   ImageBackground,
+  FlatList,
 } from "react-native";
 import backgroundImg from "../assets/images/background_img.png";
 import { LinearGradient } from "expo-linear-gradient";
 import { MaterialIcons } from "@expo/vector-icons";
 import SearchBox from "./SearchBox";
 import { useStore } from "../StoreProvider";
+import SearchHistory from "./SearchHistory";
 const SearchModal = () => {
-  const { showModal, setShowModal } = useStore();
+  const { showModal, setShowModal, searchedHistory } = useStore();
+  const [searchedCityWeatherDetails, setSearchedWeatherDetails] = useState([]);
+  // const [isLoading, setIsLoading] = useState(true);
+  useEffect(() => {
+    if (Object.keys(searchedHistory).length > 0) {
+      const result = Object.keys(searchedHistory).map(
+        (city) => searchedHistory[city]
+      );
+      setSearchedWeatherDetails(result);
+    }
+  }, [searchedHistory]);
   return (
     <Modal
       visible={showModal}
@@ -43,8 +55,20 @@ const SearchModal = () => {
               color="white"
               onPress={() => setShowModal(false)}
             />
+            <SearchBox setShowModal={setShowModal} searchModal />
           </View>
-          <SearchBox setShowModal={setShowModal} searchModal />
+          <View style={styles.container}>
+            <FlatList
+              data={searchedCityWeatherDetails}
+              renderItem={({ item, index }) => (
+                <SearchHistory searchedCityWeather={item} id={index} />
+              )}
+              keyExtractor={(item, index) => index.toString()}
+              contentContainerStyle={styles.flatList}
+              columnWrapperStyle={styles.columnWrapper}
+              numColumns={2}
+            />
+          </View>
         </ImageBackground>
       </KeyboardAvoidingView>
     </Modal>
@@ -53,6 +77,14 @@ const SearchModal = () => {
 
 export default SearchModal;
 const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    marginTop: 40,
+  },
+  columnWrapper: {
+    columnGap: 10,
+    justifyContent: "space-between",
+  },
   location: {
     position: "absolute",
     right: 0,
@@ -73,5 +105,11 @@ const styles = StyleSheet.create({
     height: "75%",
     top: -20,
     right: -20,
+  },
+  historyWrapper: {
+    marginTop: 45,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    columnGap: 20,
   },
 });

@@ -33,10 +33,25 @@ const WeatherApp = () => {
     isUserOffline,
     setIsUserOffline,
     handleInternetConnection,
+    baseURL,
+    defaultAPIKey,
+    searchedHistory,
+    setSearchedHistory,
+    storeSearchedHistoryData,
   } = useStore();
-  const defaultAPIKey = process.env.EXPO_PUBLIC_API_KEY;
+
   const [userAPIKey, setUserAPIKey] = useState("");
   const [userDefaultAPIKey, setUserDefaultAPIKey] = useState("");
+  const clearStorage = async () => {
+    console.log("cleared");
+    try {
+      await AsyncStorage.removeItem("searchedHistory");
+    } catch (error) {
+      console.log(error);
+    }
+  };
+  // clearStorage();
+
   const [fetchURL, setFetchURL] = useState("");
   const [isLocationFound, setIsLocationFound] = useState(true);
   const { longitude, latitude } = location?.coords ?? {
@@ -55,26 +70,90 @@ const WeatherApp = () => {
   };
   const handleBaseURL = () => {
     if (userDefaultAPIKey !== "") {
-      return `https://api.weatherapi.com/v1/forecast.json?key=${userDefaultAPIKey}`;
+      return `${baseURL}?key=${userDefaultAPIKey}&days=1&aqi=yes&alerts=no`;
     }
-    return `https://api.weatherapi.com/v1/forecast.json?key=${defaultAPIKey}`;
+    return `${baseURL}?key=${defaultAPIKey}&days=1&aqi=yes&alerts=no`;
   };
 
   const handleAPIURLs = (url) => {
-    const baseURL = handleBaseURL();
+    const getDataURL = handleBaseURL();
     switch (url) {
       case "coordsURL":
         setFetchURL(
-          `${baseURL}&q=${latitude},${longitude}&days=1&aqi=yes&alerts=no&timestamp=${timestamp}`
+          `${getDataURL}&q=${latitude},${longitude}&timestamp=${timestamp}`
         );
         break;
       case "searchURL":
-        setFetchURL(`${baseURL}&q=${searchText}&days=1&aqi=yes&alerts=no`);
+        setFetchURL(`${getDataURL}&q=${searchText}`);
         break;
       case "updatedURL":
         setFetchURL(
-          `${baseURL}&q=${cityNameRef.current}&days=1&aqi=yes&alerts=no&timestamp=${timestamp}`
+          `${getDataURL}&q=${cityNameRef.current}&timestamp=${timestamp}`
         );
+    }
+  };
+
+  const handleSearchedHistory = (weatherData) => {
+    const city = weatherData?.location?.name;
+    const isSearched = Object.keys(searchedHistory).includes(city);
+    if (isSearched) {
+      const copySearchedObj = { ...searchedHistory };
+      copySearchedObj[city]["data"] = weatherData;
+      setSearchedHistory(copySearchedObj);
+      storeSearchedHistoryData(copySearchedObj); // store data in storage
+    } else {
+      const copySearchedObj = { ...searchedHistory };
+      const updatedSearchedObj = {
+        ...copySearchedObj,
+        [city]: { isPinned: false, data: weatherData },
+      };
+      setSearchedHistory(updatedSearchedObj);
+      storeSearchedHistoryData(updatedSearchedObj); // store data in storage
+    }
+  };
+  const getSearchedLocationWeather = async (url) => {
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
+      return data;
+    } catch (error) {
+      console.error(error);
+    }
+  };
+  const handleExecuteAPIs = async (searchULRs, storedData, searchedCities) => {
+    const res = await Promise.allSettled(
+      searchULRs.map((url) => getSearchedLocationWeather(url))
+    );
+    const resultArr = res.map((data) => data.value);
+    const copyObj = { ...storedData };
+    searchedCities.forEach(
+      (city, key) => (copyObj[city]["data"] = resultArr[key])
+    );
+    setSearchedHistory(copyObj);
+    setIsLoading(false);
+  };
+
+  const handleFetchedSearchedCityWeather = (data) => {
+    const searchedCities = Object.keys(data);
+    const searchULRs = searchedCities.map(
+      (city) =>
+        `${baseURL}?key=${defaultAPIKey}&q=${city}&days=1&aqi=yes&alerts=no`
+    );
+    handleExecuteAPIs(searchULRs, data, searchedCities);
+  };
+
+  const getSearchedHistoryData = async () => {
+    try {
+      const res = await AsyncStorage.getItem("searchedHistory");
+      const data = JSON.parse(res);
+      if (data) {
+        setSearchedHistory(data);
+        handleFetchedSearchedCityWeather(data);
+      } else {
+        console.log("empty");
+      }
+    } catch (error) {
+      console.log(error);
     }
   };
 
@@ -119,6 +198,9 @@ const WeatherApp = () => {
         const data = await res.json();
         if (res.status === 200) {
           setWeatherDetails(data);
+          if (searchText !== "") {
+            handleSearchedHistory(data);
+          }
           if (userAPIKey !== "") {
             storeUserAPIKey();
           }
@@ -163,6 +245,7 @@ const WeatherApp = () => {
   useEffect(() => {
     if (Object?.keys(location).length > 0) {
       handleAPIURLs("coordsURL");
+      getSearchedHistoryData();
     } else {
       getUserLocation();
       getUserAPIKey(); // "Check if the user already has a stored API key or not.

@@ -8,7 +8,6 @@ const LocationNotFound = ({ setIsLocationFound }) => {
   return (
     <View style={styles.wrapper}>
       <View style={styles.header}>
-        {/* Back Arrow */}
         <MaterialIcons
           name="keyboard-backspace"
           size={30}
@@ -16,15 +15,9 @@ const LocationNotFound = ({ setIsLocationFound }) => {
           onPress={() => setIsLocationFound(true)}
           style={styles.backArrow}
         />
-
-        {/* Search Box */}
         <SearchBox setIsLocationFound={setIsLocationFound} locationFound />
       </View>
-
-      {/* Location Not Found Text */}
       <Text style={styles.text}>Location Not Found</Text>
-
-      {/* Image */}
       <View style={styles.imageWrapper}>
         <Image
           source={LocationNotFoundImage}

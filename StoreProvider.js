@@ -3,6 +3,7 @@ import * as Location from "expo-location";
 import * as Network from "expo-network";
 import { Alert } from "react-native";
 const WeatherContext = createContext();
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const StoreProvider = ({ children }) => {
   const [searchText, setSearchText] = useState("");
@@ -13,6 +14,9 @@ const StoreProvider = ({ children }) => {
   const [isAnimating, setIsAnimating] = useState(false);
   const [isUserOffline, setIsUserOffline] = useState(false);
   const [netWorkError, setNetworkError] = useState("");
+  const baseURL = "https://api.weatherapi.com/v1/forecast.json";
+  const defaultAPIKey = process.env.EXPO_PUBLIC_API_KEY;
+  const [searchedHistory, setSearchedHistory] = useState({});
   const randomCityNamesArr = [
     "New Mumbai",
     "New York City",
@@ -116,7 +120,13 @@ const StoreProvider = ({ children }) => {
       }
     }
   };
-
+  const storeSearchedHistoryData = async (data) => {
+    try {
+      await AsyncStorage.setItem("searchedHistory", JSON.stringify(data));
+    } catch (error) {
+      console.log(error);
+    }
+  };
   return (
     <WeatherContext.Provider
       value={{
@@ -138,6 +148,11 @@ const StoreProvider = ({ children }) => {
         setIsUserOffline,
         handleInternetConnection,
         netWorkError,
+        baseURL,
+        defaultAPIKey,
+        searchedHistory,
+        setSearchedHistory,
+        storeSearchedHistoryData,
       }}
     >
       {children}
