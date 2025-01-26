@@ -18,6 +18,12 @@ import { useStore } from "../StoreProvider";
 import UserOffline from "../components/UserOffline";
 import APIModal from "../components/APIModal";
 import LocationNotFound from "../components/LocationNotFound";
+import * as Sentry from "@sentry/react-native";
+Sentry.init({
+  dsn: "https://782e1373219678e96182b4cbb3858727@o4508705222033408.ingest.us.sentry.io/4508705226817536",
+  // uncomment the line below to enable Spotlight (https://spotlightjs.com)
+  // spotlight: __DEV__,
+});
 const WeatherApp = () => {
   const {
     getUserLocation,
@@ -106,6 +112,23 @@ const WeatherApp = () => {
     setIntervalId(id);
   };
 
+  const handleSetSentryExceptionMessage = (res) => {
+    Sentry.captureException(
+      new Error(`API Error: ${res.status} - ${res.statusText}`),
+      (scope) => {
+        scope.setExtras({
+          url: res?.url,
+          status: res.status,
+          statusText: res.statusText,
+          api_key_last_four: defaultAPIKey
+            ? defaultAPIKey.slice(-10)
+            : "Not provided",
+        });
+        return scope;
+      }
+    );
+  };
+
   const getWeatherDetails = async () => {
     if (!isAnimating) {
       setIsLoading(true);
@@ -128,22 +151,22 @@ const WeatherApp = () => {
           setUserDefaultAPIKey("");
           switch (res.status) {
             case 400:
-              // Alert.alert(
-              //   "Location Not Found",
-              //   "Please enter a valid location."
-              // );
               setIsLocationFound(false);
+              handleSetSentryExceptionMessage(res);
               break;
             case 401:
               setAPIError("API key is invalid or expired");
+              handleSetSentryExceptionMessage(res);
               setShowAPIModal(true);
               break;
             case 429:
               setAPIError("Rate limit exceeded. Try again later");
+              handleSetSentryExceptionMessage(res);
               setShowAPIModal(true);
               break;
             case 403:
               setAPIError("Access forbidden. Check your API key permissions");
+              handleSetSentryExceptionMessage(res);
               setShowAPIModal(true);
               break;
             default:
@@ -151,6 +174,12 @@ const WeatherApp = () => {
           }
         }
       } catch (error) {
+        Sentry.captureException(error, (scope) => {
+          scope.setExtras({
+            url: fetchURL,
+          });
+          return scope;
+        });
         Alert.alert(error);
       }
       setIsLoading(false);
